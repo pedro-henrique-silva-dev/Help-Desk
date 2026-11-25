@@ -44,7 +44,8 @@ Aplicação web para gerenciamento de chamados de suporte técnico, permitindo q
 - **Node.js** + **Express** - API REST
 - **TypeScript** - Tipagem estática
 - **Prisma ORM** - ORM moderno para banco de dados
-- **SQLite** - Banco de dados leve e portável
+- **SQLite** - Banco de dados local (desenvolvimento)
+- **PostgreSQL** - Banco de dados produção (Render)
 - **JWT** - Autenticação stateless
 - **bcryptjs** - Hash de senhas
 - **Zod** - Validação de schemas
@@ -126,12 +127,15 @@ help-desk/
 
 ## 🚀 Como Executar
 
-### Pré-requisitos
+### 📋 Pré-requisitos
 - Node.js 18+
 - npm ou yarn
 
-### Backend
+---
 
+### 💻 Desenvolvimento Local
+
+#### Backend (porta 3001)
 ```bash
 cd backend
 
@@ -141,29 +145,63 @@ npm install
 # Gerar cliente Prisma
 npm run prisma:generate
 
-# Executar migrações e popular banco
+# Executar migrações e popular banco (SQLite local)
 npm run prisma:migrate
 npm run db:seed
 
 # Iniciar servidor de desenvolvimento
 npm run dev
 ```
+Backend local: `http://localhost:3001`
 
-O backend estará disponível em `http://localhost:3001`
-
-### Frontend
-
+#### Frontend (porta 5173)
 ```bash
 cd frontend
 
 # Instalar dependências
 npm install
 
-# Iniciar servidor de desenvolvimento
+# Iniciar servidor de desenvolvimento (com proxy para backend local)
 npm run dev
 ```
+Frontend local: `http://localhost:5173`
 
-O frontend estará disponível em `http://localhost:5173`
+> **Nota:** Em desenvolvimento, o Vite faz proxy das requisições `/api` para `http://localhost:3001` automaticamente.
+
+---
+
+### ☁️ Produção (Deploy no Render)
+
+O projeto está configurado para deploy automático no **Render** (gratuito):
+
+| Serviço | URL de Produção |
+|---------|-----------------|
+| **Frontend** | https://help-desk-frontend-4j3f.onrender.com |
+| **Backend API** | https://help-desk-3y9s.onrender.com |
+| **Health Check** | https://help-desk-3y9s.onrender.com/api/health |
+
+#### Variáveis de Ambiente (configuradas no painel do Render):
+
+**Backend (Web Service):**
+```env
+NODE_ENV=production
+DATABASE_URL=[PostgreSQL Internal URL do Render]
+JWT_SECRET=[gerado automaticamente]
+PORT=10000
+```
+
+**Frontend (Static Site):**
+```env
+VITE_API_URL=https://help-desk-3y9s.onrender.com
+```
+
+#### Banco de Dados
+- **Desenvolvimento:** SQLite (`file:./dev.db`)
+- **Produção:** PostgreSQL (Render Managed)
+
+O Prisma usa `schema.prisma` (SQLite) para desenvolvimento e `schema.prod.prisma` (PostgreSQL) para produção automaticamente via script de build.
+
+---
 
 ## 👤 Credenciais de Demonstração
 
