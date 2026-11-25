@@ -3,10 +3,7 @@ services:
   - type: pserv
     name: help-desk-db
     plan: free
-    region: oregon
     postgresMajorVersion: 16
-    databaseName: helpdesk
-    user: helpdesk
 
   # Backend API
   - type: web
@@ -14,7 +11,7 @@ services:
     plan: free
     region: oregon
     runtime: node
-    buildCommand: cd backend && npm install && npm run build:prod
+    buildCommand: cd backend && npm install && npx prisma generate --schema=prisma/schema.prod.prisma && npm run build
     startCommand: cd backend && npm run start
     envVars:
       - key: NODE_ENV
