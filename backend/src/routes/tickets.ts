@@ -26,9 +26,13 @@ const getTicketWhere = (user: AuthRequest['user'], query: any) => {
   }
 
   if (query.search) {
+    const isPostgres =
+      !process.env.DATABASE_URL?.startsWith('file:') &&
+      process.env.DATABASE_PROVIDER !== 'sqlite'
+
     where.OR = [
-      { title: { contains: query.search, mode: 'insensitive' } },
-      { description: { contains: query.search, mode: 'insensitive' } }
+      { title: isPostgres ? { contains: query.search, mode: 'insensitive' } : { contains: query.search } },
+      { description: isPostgres ? { contains: query.search, mode: 'insensitive' } : { contains: query.search } }
     ]
   }
 

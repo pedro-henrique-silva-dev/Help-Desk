@@ -1,17 +1,34 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { User, Lock, Save, Bell } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { api } from '../services/api'
 import { Button } from '../components/Button'
 import { Input } from '../components/Input'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/Card'
 
+const NOTIF_STORAGE_KEY = 'helpdesk_notification_prefs'
+
 export function Settings() {
-  const { user } = useAuth()
+  const { user, updateUser } = useAuth()
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications'>('profile')
   const [profileData, setProfileData] = useState({ name: user?.name || '', email: user?.email || '' })
   const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
+  const [notifPrefs, setNotifPrefs] = useState(() => {
+    try {
+      const saved = localStorage.getItem(NOTIF_STORAGE_KEY)
+      return saved ? JSON.parse(saved) : { assigned: true, statusUpdates: true, comments: false }
+    } catch {
+      return { assigned: true, statusUpdates: true, comments: false }
+    }
+  })
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  useEffect(() => {
+    if (user) {
+      setProfileData({ name: user.name, email: user.email })
+    }
+  }, [user])
 
   const tabs = [
     { id: 'profile', label: 'Perfil', icon: User },
@@ -22,10 +39,15 @@ export function Settings() {
   const handleProfileSave = async () => {
     setSaving(true)
     setMessage(null)
-    // Simulate save
-    await new Promise(r => setTimeout(r, 500))
-    setMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' })
-    setSaving(false)
+    try {
+      const res = await api.auth.updateProfile(profileData)
+      updateUser(res.user)
+      setMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' })
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Erro ao atualizar perfil' })
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handlePasswordSave = async () => {
@@ -39,11 +61,23 @@ export function Settings() {
     }
     setSaving(true)
     setMessage(null)
-    // Simulate save
-    await new Promise(r => setTimeout(r, 500))
-    setMessage({ type: 'success', text: 'Senha alterada com sucesso!' })
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
-    setSaving(false)
+    try {
+      await api.auth.changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      })
+      setMessage({ type: 'success', text: 'Senha alterada com sucesso!' })
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Erro ao alterar senha' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleNotificationsSave = () => {
+    localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(notifPrefs))
+    setMessage({ type: 'success', text: 'Preferências de notificação salvas!' })
   }
 
   return (
@@ -168,25 +202,40 @@ export function Settings() {
                       <p className="font-medium text-gray-900">Novos chamados atribuídos</p>
                       <p className="text-sm text-gray-500">Receba email quando um chamado for atribuído a você</p>
                     </div>
-                    <input type="checkbox" defaultChecked className="w-5 h-5 text-primary-600 rounded border-gray-300 focus:ring-primary-500" />
+                    <input
+                      type="checkbox"
+                      checked={notifPrefs.assigned}
+                      onChange={(e) => setNotifPrefs((prev: any) => ({ ...prev, assigned: e.target.checked }))}
+                      className="w-5 h-5 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
+                    />
                   </label>
                   <label className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-900">Atualizações de status</p>
                       <p className="text-sm text-gray-500">Receba email quando o status de um chamado seu for alterado</p>
                     </div>
-                    <input type="checkbox" defaultChecked className="w-5 h-5 text-primary-600 rounded border-gray-300 focus:ring-primary-500" />
+                    <input
+                      type="checkbox"
+                      checked={notifPrefs.statusUpdates}
+                      onChange={(e) => setNotifPrefs((prev: any) => ({ ...prev, statusUpdates: e.target.checked }))}
+                      className="w-5 h-5 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
+                    />
                   </label>
                   <label className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-900">Comentários em chamados</p>
                       <p className="text-sm text-gray-500">Receba email quando houver novos comentários</p>
                     </div>
-                    <input type="checkbox" className="w-5 h-5 text-primary-600 rounded border-gray-300 focus:ring-primary-500" />
+                    <input
+                      type="checkbox"
+                      checked={notifPrefs.comments}
+                      onChange={(e) => setNotifPrefs((prev: any) => ({ ...prev, comments: e.target.checked }))}
+                      className="w-5 h-5 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
+                    />
                   </label>
                 </div>
                 <div className="pt-4 border-t border-gray-100">
-                  <Button variant="outline">Salvar preferências</Button>
+                  <Button variant="outline" onClick={handleNotificationsSave}>Salvar preferências</Button>
                 </div>
               </CardContent>
             </Card>

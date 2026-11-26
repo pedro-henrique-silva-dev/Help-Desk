@@ -22,7 +22,7 @@ model User {
 
 model Ticket {
   id          String   @id @default(cuid())
-  number      Int      @unique @default(autoincrement())
+  number      Int      @unique
   title       String
   description String
   category    String

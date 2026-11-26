@@ -1,4 +1,5 @@
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+const rawApiUrl = import.meta.env.VITE_API_URL?.replace(/\/+$/, '')
+const API_BASE = rawApiUrl ? (rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`) : '/api'
 
 class ApiError extends Error {
   constructor(
@@ -49,6 +50,16 @@ export const api = {
         body: JSON.stringify(data),
       }),
     me: () => request<{ user: any }>('/auth/me'),
+    updateProfile: (data: { name: string; email: string }) =>
+      request<{ user: any }>('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    changePassword: (data: { currentPassword: string; newPassword: string }) =>
+      request<{ message: string }>('/auth/password', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
   },
   tickets: {
     list: (params?: { page?: number; limit?: number; status?: string; category?: string; priority?: string; search?: string }) => {
@@ -80,6 +91,11 @@ export const api = {
   users: {
     list: () => request<{ users: any[] }>('/users'),
     get: (id: string) => request<{ user: any }>(`/users/${id}`),
+    create: (data: { name: string; email: string; password: string; role?: string }) =>
+      request<{ user: any }>('/users', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
     update: (id: string, data: any) => request<{ user: any }>(`/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),

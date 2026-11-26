@@ -72,10 +72,12 @@ export function TicketDetail() {
     }
   }
 
-  const handleUpdate = async () => {
+  const handleUpdate = async (overrideData?: Partial<typeof editData>) => {
+    const payload = overrideData ? { ...editData, ...overrideData } : editData
+    setEditData(payload)
     setUpdating(true)
     try {
-      const res = await api.tickets.update(id!, editData)
+      const res = await api.tickets.update(id!, payload)
       setTicket(res.ticket)
       setShowEditModal(false)
     } catch (error) {
@@ -231,19 +233,15 @@ export function TicketDetail() {
                     label="Alterar Status"
                     options={statusOptions}
                     value={ticket.status}
-                    onChange={(e) => {
-                      setEditData(prev => ({ ...prev, status: e.target.value }))
-                      handleUpdate()
-                    }}
+                    disabled={updating}
+                    onChange={(e) => handleUpdate({ status: e.target.value })}
                   />
                   <Select
                     label="Alterar Prioridade"
                     options={priorityOptions}
                     value={ticket.priority}
-                    onChange={(e) => {
-                      setEditData(prev => ({ ...prev, priority: e.target.value }))
-                      handleUpdate()
-                    }}
+                    disabled={updating}
+                    onChange={(e) => handleUpdate({ priority: e.target.value })}
                   />
                 </>
               )}

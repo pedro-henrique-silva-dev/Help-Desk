@@ -27,8 +27,26 @@ export const updateTicketSchema = z.object({
   status: z.enum(['OPEN', 'IN_PROGRESS', 'CLOSED']).optional()
 })
 
-export const updateUserSchema = z.object({
-  name: z.string().min(2).optional(),
-  email: z.string().email().optional(),
+export const createUserSchema = z.object({
+  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  email: z.string().email('Email inválido'),
+  password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
   role: z.enum(['ADMIN', 'REQUESTER']).optional()
+})
+
+export const updateUserSchema = z.object({
+  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').optional(),
+  email: z.string().email('Email inválido').optional(),
+  password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres').optional(),
+  role: z.enum(['ADMIN', 'REQUESTER']).optional()
+})
+
+export const updateProfileSchema = z.object({
+  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  email: z.string().email('Email inválido')
+})
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Senha atual é obrigatória'),
+  newPassword: z.string().min(6, 'Nova senha deve ter pelo menos 6 caracteres')
 })

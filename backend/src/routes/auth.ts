@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '../prisma.js'
 import { authenticate, AuthRequest, generateToken } from '../middleware/auth.js'
 import { asyncHandler, AppError } from '../middleware/errorHandler.js'
-import { registerSchema, loginSchema } from '../utils/validators.js'
+import { registerSchema, loginSchema, updateProfileSchema, changePasswordSchema } from '../utils/validators.js'
 
 const router = Router()
 
@@ -76,6 +76,54 @@ router.get('/me', authenticate, asyncHandler(async (req: AuthRequest, res: Respo
   }
 
   res.json({ user })
+}))
+
+router.put('/profile', authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const data = updateProfileSchema.parse(req.body)
+
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      email: data.email,
+      NOT: { id: req.user!.id }
+    }
+  })
+
+  if (existingUser) {
+    throw new AppError(409, 'Email já cadastrado por outro usuário')
+  }
+
+  const user = await prisma.user.update({
+    where: { id: req.user!.id },
+    data: { name: data.name, email: data.email },
+    select: { id: true, name: true, email: true, role: true, createdAt: true }
+  })
+
+  res.json({ user })
+}))
+
+router.put('/password', authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const data = changePasswordSchema.parse(req.body)
+
+  const user = await prisma.user.findUnique({
+    where: { id: req.user!.id }
+  })
+
+  if (!user) {
+    throw new AppError(404, 'Usuário não encontrado')
+  }
+
+  const validPassword = await bcrypt.compare(data.currentPassword, user.password)
+  if (!validPassword) {
+    throw new AppError(401, 'Senha atual incorreta')
+  }
+
+  const hashedPassword = await bcrypt.hash(data.newPassword, 10)
+  await prisma.user.update({
+    where: { id: req.user!.id },
+    data: { password: hashedPassword }
+  })
+
+  res.json({ message: 'Senha alterada com sucesso' })
 }))
 
 export default router

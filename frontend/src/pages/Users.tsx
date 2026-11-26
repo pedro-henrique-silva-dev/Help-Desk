@@ -27,6 +27,8 @@ export function UsersPage() {
   const [deletingUser, setDeletingUser] = useState<User | null>(null)
   const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'REQUESTER' })
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [pageError, setPageError] = useState('')
 
   useEffect(() => {
     fetchUsers()
@@ -45,36 +47,33 @@ export function UsersPage() {
 
   const handleOpenCreate = () => {
     setEditingUser(null)
+    setError('')
     setFormData({ name: '', email: '', password: '', role: 'REQUESTER' })
     setShowModal(true)
   }
 
   const handleOpenEdit = (u: User) => {
     setEditingUser(u)
+    setError('')
     setFormData({ name: u.name, email: u.email, password: '', role: u.role })
     setShowModal(true)
   }
 
   const handleSave = async () => {
     setSaving(true)
+    setError('')
     try {
       if (editingUser) {
         const { password, ...data } = formData
         const updateData = password ? { ...data, password } : data
         await api.users.update(editingUser.id, updateData)
       } else {
-        await api.users.list() // This will fail, need to create user
-        // Actually we need a create user endpoint
-        await fetch('/api/users', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-          body: JSON.stringify(formData)
-        })
+        await api.users.create(formData)
       }
-      fetchUsers()
+      await fetchUsers()
       setShowModal(false)
-    } catch (error) {
-      console.error('Erro ao salvar usuário:', error)
+    } catch (err: any) {
+      setError(err.message || 'Erro ao salvar usuário')
     } finally {
       setSaving(false)
     }
@@ -82,11 +81,12 @@ export function UsersPage() {
 
   const handleDelete = async () => {
     if (!deletingUser) return
+    setPageError('')
     try {
       await api.users.delete(deletingUser.id)
-      fetchUsers()
-    } catch (error) {
-      console.error('Erro ao excluir usuário:', error)
+      await fetchUsers()
+    } catch (err: any) {
+      setPageError(err.message || 'Erro ao excluir usuário')
     } finally {
       setDeletingUser(null)
     }
@@ -144,6 +144,12 @@ export function UsersPage() {
         </Button>
       </div>
 
+      {pageError && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm" role="alert">
+          {pageError}
+        </div>
+      )}
+
       <Card className="p-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -180,6 +186,11 @@ export function UsersPage() {
         title={editingUser ? 'Editar Usuário' : 'Novo Usuário'}
       >
         <form onSubmit={(e) => { e.preventDefault(); handleSave() }} className="space-y-4">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm" role="alert">
+              {error}
+            </div>
+          )}
           <Input
             label="Nome completo"
             value={formData.name}

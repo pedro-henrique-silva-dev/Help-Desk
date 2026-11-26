@@ -59,7 +59,12 @@ router.get('/my-recent', authenticate, asyncHandler(async (req: AuthRequest, res
   const tickets = await prisma.ticket.findMany({
     where: { requesterId: req.user!.id },
     take: 5,
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
+    include: {
+      requester: {
+        select: { id: true, name: true, email: true }
+      }
+    }
   })
 
   res.json({ tickets })

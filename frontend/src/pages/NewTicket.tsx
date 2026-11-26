@@ -130,6 +130,7 @@ export function NewTicket() {
                 options={categoryOptions}
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
+                placeholder="Selecione uma categoria"
                 error={errors.category}
                 required
               />

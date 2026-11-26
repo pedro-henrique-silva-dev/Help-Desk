@@ -40,18 +40,23 @@ export function TicketList() {
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 })
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState(searchParams.get('search') || '')
-  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '')
-  const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || '')
-  const [priorityFilter, setPriorityFilter] = useState(searchParams.get('priority') || '')
 
+  const searchQuery = searchParams.get('search') || ''
+  const statusFilter = searchParams.get('status') || ''
+  const categoryFilter = searchParams.get('category') || ''
+  const priorityFilter = searchParams.get('priority') || ''
   const page = parseInt(searchParams.get('page') || '1')
+
+  useEffect(() => {
+    setSearch(searchQuery)
+  }, [searchQuery])
 
   useEffect(() => {
     const fetchTickets = async () => {
       setLoading(true)
       try {
         const params: any = { page, limit: 10 }
-        if (search) params.search = search
+        if (searchQuery) params.search = searchQuery
         if (statusFilter) params.status = statusFilter
         if (categoryFilter) params.category = categoryFilter
         if (priorityFilter) params.priority = priorityFilter
@@ -67,15 +72,13 @@ export function TicketList() {
     }
 
     fetchTickets()
-  }, [page, search, statusFilter, categoryFilter, priorityFilter])
+  }, [page, searchQuery, statusFilter, categoryFilter, priorityFilter])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    const params = new URLSearchParams()
-    if (search) params.set('search', search)
-    if (statusFilter) params.set('status', statusFilter)
-    if (categoryFilter) params.set('category', categoryFilter)
-    if (priorityFilter) params.set('priority', priorityFilter)
+    const params = new URLSearchParams(searchParams)
+    if (search.trim()) params.set('search', search.trim())
+    else params.delete('search')
     params.set('page', '1')
     setSearchParams(params)
   }
@@ -154,14 +157,10 @@ export function TicketList() {
               onChange={(e) => handleFilterChange('priority', e.target.value)}
             />
           </div>
-          {search || statusFilter || categoryFilter || priorityFilter ? (
+          {searchQuery || statusFilter || categoryFilter || priorityFilter ? (
             <Button type="button" variant="outline" onClick={() => {
               setSearch('')
-              setStatusFilter('')
-              setCategoryFilter('')
-              setPriorityFilter('')
-              const params = new URLSearchParams()
-              setSearchParams(params)
+              setSearchParams(new URLSearchParams())
             }}>
               Limpar filtros
             </Button>
